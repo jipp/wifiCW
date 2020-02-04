@@ -1,12 +1,12 @@
 #include <Arduino.h>
 
 // TODO: add esp8266
-// https://github.com/oe1wkl/Morserino-32/blob/master/Software/src/morse_3_v2.3/morse_3_v2.3.ino
+// decoder code taken from: https://github.com/oe1wkl/Morserino-32/blob/master/Software/src/morse_3_v2.3/morse_3_v2.3.ino
 
 #include <iostream>
 
-#include <Adafruit_GFX.h>    // Core graphics library
-#include <Adafruit_ST7735.h> // Hardware-specific library
+#include <Adafruit_GFX.h>
+#include <Adafruit_ST7735.h>
 #include <Bounce2.h>
 #include <Decoder.hpp>
 #include <SPI.h>
@@ -67,9 +67,9 @@ uint64_t startTimerNotPressed = 0;
 uint64_t durationTimerNotPressed = 0;
 const uint16_t dit = 60;
 const uint16_t dah = 3 * dit;
-const uint16_t symbolBreak = dit;
-const uint16_t letterBreak = 3 * dah;
-const uint16_t wordBreak = 7 * dit;
+// const uint16_t symbolBreak = dit;
+// const uint16_t letterBreak = 3 * dah;
+// const uint16_t wordBreak = 7 * dit;
 uint16_t ditAvg = dit;
 uint16_t dahAvg = dah;
 uint64_t threshold;
@@ -235,7 +235,6 @@ void loop()
     durationTimerNotPressed = millis() - startTimerNotPressed;
     if (durationTimerNotPressed < ditAvg * 2.4)
       recalculateDit(durationTimerNotPressed, ditAvg);
-    //std::cout << "duration released: " << durationTimerNotPressed << ", ditAvg: " << ditAvg << ", dahAvg: " << dahAvg << std::endl;
   }
 
   if (contact.rose())
@@ -259,7 +258,6 @@ void loop()
       }
       newCharacter = true;
     }
-    //std::cout << "duration pressed: " << durationTimerPressed << ", threshold: " << threshold << ", ditAvg: " << ditAvg << ", dahAvg: " << dahAvg << std::endl;
   }
 
   if (contact.read() == LOW) // presssed
