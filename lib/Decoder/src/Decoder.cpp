@@ -28,6 +28,7 @@ Decoder::Decoder(void)
     letter["_.._"] = "x";
     letter["_.__"] = "y";
     letter["__.."] = "z";
+
     letter[".____"] = "1";
     letter["..___"] = "2";
     letter["...__"] = "3";
@@ -38,7 +39,16 @@ Decoder::Decoder(void)
     letter["___.."] = "8";
     letter["____."] = "9";
     letter["_____"] = "0";
+
     // Sonderzeichen
+    letter["._._._"] = ".";
+    letter["__..__"] = ",";
+    letter["..__.."] = "?";
+    letter[".____"] = "'";
+    letter["_._.__"] = "!";
+    letter["_.._."] = "/";
+    // ...
+
     letter["_._._"] = "KA";
     letter["_..._"] = "BT";
     letter["._._."] = "AR";
