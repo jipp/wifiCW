@@ -49,24 +49,60 @@ void SignalDecoder::released()
       status = Status::characterReceived;
       std::cout << code << " " << cwDecoder.decode(code) << std::endl;
       code.clear();
-      d_wpm = (d_wpm + (int)(7200 / (dahAvg + 3 * ditAvg))) / 2;
+      wpm = (wpm + (int)(7200 / (dahAvg + 3 * ditAvg))) / 2;
     }
   }
 
   if (status == Status::characterReceived)
   {
     durationTimerNotPressed = NOW - startTimerNotPressed;
-    lacktime = 5;
 
-    if (d_wpm > 35)
+    if (wpm > 35)
       lacktime = 6;
-    else if (d_wpm > 30)
+    else if (wpm > 30)
       lacktime = 5.5;
+    else
+      lacktime = 5;
 
     if (durationTimerNotPressed > lacktime * ditAvg)
     {
       status = Status::waiting;
       std::cout << std::endl;
+    }
+  }
+}
+
+void SignalDecoder::contactStatus()
+{
+  if (oldStatus == false)
+  {
+    released();
+  }
+}
+
+void SignalDecoder::contactStatus(bool status)
+{
+  if (status == true)
+  {
+    if (oldStatus == true)
+    {
+    }
+    if (oldStatus == false)
+    {
+      pressing();
+      oldStatus = true;
+    }
+  }
+  if (status == false)
+  {
+    if (oldStatus == true)
+    {
+      releasing();
+      oldStatus = false;
+    }
+    if (oldStatus == false)
+    {
+      released();
     }
   }
 }

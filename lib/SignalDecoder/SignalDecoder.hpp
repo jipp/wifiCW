@@ -1,7 +1,7 @@
 #ifndef SIGNAL_DECODER_HPP_
 #define SIGNAL_DECODER_HPP_
 
-// decoder code taken from: https://github.com/oe1wkl/Morserino-32/blob/master/Software/src/morse_3_v2.3/morse_3_v2.3.ino
+// decoder code taken from: https://github.com/oe1wkl/Morserino-32 /blob/master/Software/src/morse_3_v2.3/morse_3_v2.3.ino
 
 #include <chrono>
 #include <cmath>
@@ -14,12 +14,12 @@
 class SignalDecoder
 {
 public:
-    bool received = false;
     SignalDecoder(void);
     void pressing();
     void releasing();
     void released();
-    std::string getStatus();
+    void contactStatus();
+    void contactStatus(bool status);
 
 private:
     uint64_t startTimerPressed = 0;
@@ -31,13 +31,19 @@ private:
     uint64_t ditAvg = dit;
     uint64_t dahAvg = dah;
     float lacktime = 2.2;
-    uint8_t d_wpm = 15;
+    uint8_t wpm = 15;
     std::string code;
     CWDecoder cwDecoder = CWDecoder();
     void recalculateDit(uint64_t duration, uint64_t dit);
     void recalculateDah(uint64_t duration, uint64_t dit, uint64_t dah);
-    enum Status {waiting, symbolReceived, characterReceived};
+    enum Status
+    {
+        waiting,
+        symbolReceived,
+        characterReceived
+    };
     Status status = Status::waiting;
+    bool oldStatus = false;
 };
 
 #endif

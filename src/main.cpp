@@ -60,7 +60,8 @@ const uint8_t resolution = 8;
 const uint8_t maxChannel = 10;
 uint8_t channel = 0;
 
-SignalDecoder signalDecoder = SignalDecoder();
+SignalDecoder signalDecoderSend = SignalDecoder();
+SignalDecoder signalDecoderReceive = SignalDecoder();
 
 void displayInfo(uint8_t channel)
 {
@@ -104,7 +105,7 @@ void dataSend(uint8_t channel, bool pressed)
 {
   payload.channel = channel;
   payload.pressed = pressed;
-  //std::cout << "channel: " << (uint16_t)payload.channel << " pressed: " << payload.pressed << std::endl;
+  // std::cout << "channel: " << (uint16_t)payload.channel << " pressed: " << payload.pressed << std::endl;
   esp_now_send(slave.peer_addr, (uint8_t *)&payload, sizeof(payload));
 }
 
@@ -112,11 +113,12 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
 {
   Payload *payload = (Payload *)data;
 
-  std::cout << "Received " << data_len << " Bytes; Channel: " << payload->channel << " / " << payload->pressed << std::endl;
+  // std::cout << "Received " << data_len << " Bytes; Channel: " << payload->channel << " / " << payload->pressed << std::endl;
 
   if (channel == payload->channel)
   {
     statusUpdate(payload->pressed);
+    signalDecoderReceive.contactStatus(payload->pressed);
   }
 }
 
@@ -190,23 +192,25 @@ void loop()
   channelUp.update();
   channelDown.update();
 
+  signalDecoderReceive.contactStatus();
+
   if (contact.fell())
   {
     statusUpdate(true);
     dataSend(channel, true);
-    signalDecoder.pressing();
+    signalDecoderSend.pressing();
   }
 
   if (contact.rose())
   {
     statusUpdate(false);
     dataSend(channel, false);
-    signalDecoder.releasing();
+    signalDecoderSend.releasing();
   }
 
   if (contact.read() == HIGH)
   {
-    signalDecoder.released();
+    signalDecoderSend.released();
   }
 
   if (channelUp.fell())
