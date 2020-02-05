@@ -1,14 +1,13 @@
 #include <Arduino.h>
 
 // TODO: add esp8266
-// decoder code taken from: https://github.com/oe1wkl/Morserino-32/blob/master/Software/src/morse_3_v2.3/morse_3_v2.3.ino
 
 #include <iostream>
 
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h>
 #include <Bounce2.h>
-#include <Decoder.hpp>
+#include <SignalDecoder.hpp>
 #include <SPI.h>
 
 #ifdef ESP32
@@ -61,25 +60,7 @@ const uint8_t resolution = 8;
 const uint8_t maxChannel = 10;
 uint8_t channel = 0;
 
-uint64_t startTimerPressed = 0;
-uint64_t durationTimerPressed = 0;
-uint64_t startTimerNotPressed = 0;
-uint64_t durationTimerNotPressed = 0;
-const uint16_t dit = 60;
-const uint16_t dah = 3 * dit;
-// const uint16_t symbolBreak = dit;
-// const uint16_t letterBreak = 3 * dah;
-// const uint16_t wordBreak = 7 * dit;
-uint16_t ditAvg = dit;
-uint16_t dahAvg = dah;
-uint64_t threshold;
-uint8_t d_wpm = 15;
-float lacktime = 2.2;
-bool newCharacter = false;
-bool newWord = false;
-std::string code;
-
-Decoder decoder = Decoder();
+SignalDecoder signalDecoder = SignalDecoder();
 
 void displayInfo(uint8_t channel)
 {
@@ -168,24 +149,6 @@ void addressInit()
   }
 }
 
-void recalculateDit(uint64_t duration, uint64_t ditAvg)
-{
-  ditAvg = (uint64_t)((4 * ditAvg + duration) / 5);
-}
-
-void recalculateDah(uint64_t duration, uint64_t ditAvg, uint64_t dahAvg)
-{
-  if (duration > 2 * dahAvg)
-  {
-    dahAvg = (dahAvg + 2 * duration) / 3;
-    ditAvg = ditAvg / 2 + dahAvg / 6;
-  }
-  else
-  {
-    dahAvg = (3 * ditAvg + dahAvg + duration) / 3;
-  }
-}
-
 void setup()
 {
   pinMode(buttonPin, INPUT_PULLUP);
@@ -231,69 +194,19 @@ void loop()
   {
     statusUpdate(true);
     dataSend(channel, true);
-    startTimerPressed = millis();
-    durationTimerNotPressed = millis() - startTimerNotPressed;
-    if (durationTimerNotPressed < ditAvg * 2.4)
-      recalculateDit(durationTimerNotPressed, ditAvg);
+    signalDecoder.pressing();
   }
 
   if (contact.rose())
   {
     statusUpdate(false);
     dataSend(channel, false);
-    durationTimerPressed = millis() - startTimerPressed;
-    startTimerNotPressed = millis();
-    threshold = (uint64_t)(ditAvg * sqrt(dahAvg / ditAvg));
-    if (durationTimerPressed > (ditAvg * 0.5) && durationTimerPressed < (dahAvg * 2.5))
-    {
-      if (durationTimerPressed < threshold)
-      {
-        recalculateDit(durationTimerPressed, ditAvg);
-        code += ".";
-      }
-      else
-      {
-        recalculateDah(durationTimerPressed, ditAvg, dahAvg);
-        code += "_";
-      }
-      newCharacter = true;
-    }
+    signalDecoder.releasing();
   }
 
-  if (contact.read() == LOW) // presssed
+  if (contact.read() == HIGH)
   {
-  }
-
-  if (newCharacter and contact.read() == HIGH) // released
-  {
-    durationTimerNotPressed = millis() - startTimerNotPressed;
-    lacktime = 2.2;
-
-    if (durationTimerNotPressed > lacktime * ditAvg)
-    {
-      newCharacter = false;
-      newWord = true;
-      std::cout << code << " " << decoder.decode(code) << std::endl;
-      code.clear();
-      d_wpm = (d_wpm + (int)(7200 / (dahAvg + 3 * ditAvg))) / 2;
-    }
-  }
-
-  if (newWord and contact.read() == HIGH) // released
-  {
-    durationTimerNotPressed = millis() - startTimerNotPressed;
-    lacktime = 5;
-
-    if (d_wpm > 35)
-      lacktime = 6;
-    else if (d_wpm > 30)
-      lacktime = 5.5;
-
-    if (durationTimerNotPressed > lacktime * ditAvg)
-    {
-      newWord = false;
-      std::cout << std::endl;
-    }
+    signalDecoder.released();
   }
 
   if (channelUp.fell())

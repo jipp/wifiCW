@@ -1,6 +1,6 @@
-#include "Decoder.hpp"
+#include "CWDecoder.hpp"
 
-Decoder::Decoder(void)
+CWDecoder::CWDecoder(void)
 {
     letter["._"] = "a";
     letter["_..."] = "b";
@@ -58,7 +58,7 @@ Decoder::Decoder(void)
     letter["........"] = "HH";
 }
 
-std::string Decoder::decode(std::string code)
+std::string CWDecoder::decode(std::string code)
 {
     if (letter.find(code) == letter.end())
         return "?";
@@ -66,7 +66,7 @@ std::string Decoder::decode(std::string code)
     return letter[code];
 }
 
-uint16_t Decoder::size()
+uint16_t CWDecoder::size()
 {
     return letter.size();
 }

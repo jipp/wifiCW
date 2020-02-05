@@ -1,13 +1,13 @@
-#ifndef DECODER_HPP_
-#define DECODEER_HPP_
+#ifndef CW_DECODER_HPP_
+#define CW_DECODEER_HPP_
 
-#include <iostream>
+#include <string>
 #include <map>
 
-class Decoder
+class CWDecoder
 {
 public:
-    Decoder(void);
+    CWDecoder(void);
     std::string decode(std::string code);
     uint16_t size();
 
