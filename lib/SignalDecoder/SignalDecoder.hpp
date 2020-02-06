@@ -5,20 +5,29 @@
 
 #include <chrono>
 #include <cmath>
-#include <iostream>
-
-#include <CWDecoder.hpp>
+#include <string>
 
 #define NOW std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()
 
 class SignalDecoder
 {
 public:
+    uint8_t wpm = 15;
+    std::string code;
+    enum Status
+    {
+        waiting,
+        symbolReceived,
+        characterReceived,
+        waitingWordReceived,
+        wordReceived
+    };
+    Status status = Status::waiting;
     SignalDecoder(void);
     void pressing();
     void releasing();
     void released();
-    void contactStatus();
+    void contactUpdate();
     void contactStatus(bool status);
 
 private:
@@ -31,18 +40,8 @@ private:
     uint64_t ditAvg = dit;
     uint64_t dahAvg = dah;
     float lacktime = 2.2;
-    uint8_t wpm = 15;
-    std::string code;
-    CWDecoder cwDecoder = CWDecoder();
     void recalculateDit(uint64_t duration, uint64_t dit);
     void recalculateDah(uint64_t duration, uint64_t dit, uint64_t dah);
-    enum Status
-    {
-        waiting,
-        symbolReceived,
-        characterReceived
-    };
-    Status status = Status::waiting;
     bool oldStatus = false;
 };
 

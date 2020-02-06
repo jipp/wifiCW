@@ -47,13 +47,11 @@ void SignalDecoder::released()
     if (durationTimerNotPressed > lacktime * ditAvg)
     {
       status = Status::characterReceived;
-      std::cout << code << " " << cwDecoder.decode(code) << std::endl;
-      code.clear();
       wpm = (wpm + (int)(7200 / (dahAvg + 3 * ditAvg))) / 2;
     }
   }
 
-  if (status == Status::characterReceived)
+  if (status == Status::characterReceived or status == Status::waitingWordReceived)
   {
     durationTimerNotPressed = NOW - startTimerNotPressed;
 
@@ -66,13 +64,12 @@ void SignalDecoder::released()
 
     if (durationTimerNotPressed > lacktime * ditAvg)
     {
-      status = Status::waiting;
-      std::cout << std::endl;
+      status = Status::wordReceived;
     }
   }
 }
 
-void SignalDecoder::contactStatus()
+void SignalDecoder::contactUpdate()
 {
   if (oldStatus == false)
   {
