@@ -98,7 +98,7 @@ void displayWPM(uint8_t rxWPM, uint8_t txWPM)
   tft.getTextBounds("XXXXXX", 5, 50, &x1, &y1, &w, &h);
   tft.fillRect(0, 50, tft.width(), h, ST7735_BLACK);
   tft.setCursor(5, 50);
-  tft.print("WPM (rx/tx): ");
+  tft.print("WPM (tx/rx): ");
   tft.print(rxWPM);
   tft.print("/");
   tft.print(txWPM);
@@ -215,6 +215,7 @@ void setup()
 
   displayInfo(channel);
   displayWPM(signalDecoderSend.wpm, signalDecoderReceive.wpm);
+  displayLetter(buf);
 
   ledcSetup(ledChannel, freq, resolution);
   ledcAttachPin(buzzerPin, ledChannel);
@@ -230,13 +231,13 @@ void loop()
 
   if (signalDecoderSend.status == signalDecoderSend.Status::characterReceived)
   {
-    std::cout << cwDecoder.decode(signalDecoderSend.code) << " " << signalDecoderSend.code;
+    std::cout << cwDecoder.decode(signalDecoderSend.code) << " " << signalDecoderSend.code << std::endl;
     displayWPM(signalDecoderSend.wpm, signalDecoderReceive.wpm);
     buf += cwDecoder.decode(signalDecoderSend.code);
 
     if (buf.length() > 15)
       buf.erase(0, buf.length() - 15);
-      
+
     signalDecoderSend.code.clear();
     displayLetter(buf);
     signalDecoderSend.status = signalDecoderSend.Status::waitingWordReceived;
@@ -276,6 +277,7 @@ void loop()
       channel = 0;
     displayInfo(channel);
     displayWPM(signalDecoderSend.wpm, signalDecoderReceive.wpm);
+    displayLetter(buf);
     ledcWriteTone(ledChannel, 0);
   }
 
@@ -286,6 +288,7 @@ void loop()
       channel = maxChannel;
     displayInfo(channel);
     displayWPM(signalDecoderSend.wpm, signalDecoderReceive.wpm);
+    displayLetter(buf);
     ledcWriteTone(ledChannel, 0);
   }
 }
