@@ -200,7 +200,7 @@ void setup()
   Serial.begin(SPEED);
 
   tft.initR(INITR_144GREENTAB);
-  tft.setTextWrap(false); // Allow text to run off right edge
+  tft.setTextWrap(true); // Allow text to run off right edge
 
   WiFi.mode(WIFI_STA);
   WiFi.disconnect();

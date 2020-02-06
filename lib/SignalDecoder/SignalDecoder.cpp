@@ -79,25 +79,23 @@ void SignalDecoder::contactUpdate()
 
 void SignalDecoder::contactStatus(bool status)
 {
-  if (status == true)
+  if (oldStatus == true)
   {
-    if (oldStatus == true)
-    {
-    }
-    if (oldStatus == false)
-    {
-      pressing();
-      oldStatus = true;
-    }
-  }
-  if (status == false)
-  {
-    if (oldStatus == true)
+    if (status == false)
     {
       releasing();
       oldStatus = false;
     }
-    if (oldStatus == false)
+  }
+
+  if (oldStatus == false)
+  {
+    if (status == true)
+    {
+      pressing();
+      oldStatus = true;
+    }
+    if (status == false)
     {
       released();
     }
