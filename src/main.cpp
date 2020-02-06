@@ -77,7 +77,7 @@ void displayInfo(uint8_t channel)
   tft.setRotation(1);
   tft.fillScreen(ST7735_BLACK);
   tft.setCursor(5, 10);
-  tft.setTextColor(ST7735_WHITE);
+  tft.setTextColor(ST7735_WHITE, ST7735_BLACK);
   tft.setTextSize(1);
   tft.print("WiFi: ");
   tft.println(wifiChannel);
@@ -92,15 +92,12 @@ void displayInfo(uint8_t channel)
 
 void displayWPM(uint8_t rxWPM, uint8_t txWPM)
 {
-  int16_t x = 5, y = 50;
   int16_t x1, y1;
   uint16_t w, h;
 
-  tft.setCursor(x, y);
-  tft.getTextBounds("XXXXXX", x, y, &x1, &y1, &w, &h);
-  tft.fillRect(0, y1, tft.width(), h, ST7735_BLACK);
-
-  tft.setCursor(x, y);
+  tft.getTextBounds("XXXXXX", 5, 50, &x1, &y1, &w, &h);
+  tft.fillRect(0, 50, tft.width(), h, ST7735_BLACK);
+  tft.setCursor(5, 50);
   tft.print("WPM (rx/tx): ");
   tft.print(rxWPM);
   tft.print("/");
@@ -112,10 +109,10 @@ void displayLetter(std::string letter)
   int16_t x = 5, y = 75;
   int16_t x1, y1;
   uint16_t w, h;
-  tft.setCursor(x, y);
   tft.getTextBounds("XXXXXX", x, y, &x1, &y1, &w, &h);
-  tft.fillRect(0, y1, tft.width(), h, ST7735_BLACK);
-  tft.setCursor(x, y);
+  tft.fillRect(0, 75, tft.width(), h, ST7735_BLACK);
+  tft.setCursor(5, 75);
+  tft.print("tx: ");
   tft.print(letter.c_str());
 }
 
@@ -236,8 +233,12 @@ void loop()
     std::cout << cwDecoder.decode(signalDecoderSend.code) << " " << signalDecoderSend.code;
     displayWPM(signalDecoderSend.wpm, signalDecoderReceive.wpm);
     buf += cwDecoder.decode(signalDecoderSend.code);
+
+    if (buf.length() > 15)
+      buf.erase(0, buf.length() - 15);
+      
     signalDecoderSend.code.clear();
-    displayLetter("tx: " + buf);
+    displayLetter(buf);
     signalDecoderSend.status = signalDecoderSend.Status::waitingWordReceived;
   }
 
