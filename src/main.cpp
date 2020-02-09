@@ -69,8 +69,7 @@ uint8_t channel = 0;
 SignalDecoder signalDecoderSend = SignalDecoder();
 SignalDecoder signalDecoderReceive = SignalDecoder();
 
-CWDecoder cwDecoder = CWDecoder();
-const uint8_t displayLetter = 15;
+const uint8_t displayLetters = 15;
 std::string bufRX;
 std::string bufTX;
 
@@ -102,19 +101,11 @@ void displayWPM(uint8_t rxWPM, uint8_t txWPM)
   tft.print(txWPM);
 }
 
-void displayLetterTX(std::string letter)
+void displayLetter(int16_t y, std::string text, std::string letter)
 {
-  tft.fillRect(0, 75, tft.width(), 8, ST7735_BLACK);
-  tft.setCursor(5, 75);
-  tft.print("tx: ");
-  tft.print(letter.c_str());
-}
-
-void displayLetterRX(std::string letter)
-{
-  tft.fillRect(0, 85, tft.width(), 8, ST7735_BLACK);
-  tft.setCursor(5, 85);
-  tft.print("rx: ");
+  tft.fillRect(0, y, tft.width(), 8, ST7735_BLACK);
+  tft.setCursor(5, y);
+  tft.print(text.c_str());
   tft.print(letter.c_str());
 }
 
@@ -186,6 +177,32 @@ void addressInit()
   }
 }
 
+void getBuffer(int16_t y, std::string text, std::string &buf, SignalDecoder &signalDecoder1, SignalDecoder &signalDecoder2)
+{
+  CWDecoder cwDecoder = CWDecoder();
+
+  if (signalDecoder1.status == signalDecoder1.Status::characterReceived)
+  {
+    std::cout << cwDecoder.decode(signalDecoder1.code) << " " << signalDecoder1.code << std::endl;
+    buf += cwDecoder.decode(signalDecoder1.code);
+
+    if (buf.length() > displayLetters)
+      buf.erase(0, buf.length() - displayLetters);
+
+    signalDecoder1.code.clear();
+    displayLetter(y, text, buf);
+    signalDecoder1.status = signalDecoder1.Status::waitingWordReceived;
+  }
+
+  if (signalDecoder1.status == signalDecoder1.Status::wordReceived)
+  {
+    std::cout << std::endl;
+    displayWPM(signalDecoder1.wpm, signalDecoder2.wpm);
+    buf += " ";
+    signalDecoder1.status = signalDecoder1.Status::waiting;
+  }
+}
+
 void setup()
 {
   pinMode(buttonPin, INPUT_PULLUP);
@@ -217,8 +234,8 @@ void setup()
 
   displayInfo(channel);
   displayWPM(signalDecoderSend.wpm, signalDecoderReceive.wpm);
-  displayLetterTX(bufTX);
-  displayLetterRX(bufRX);
+  displayLetter(75, "tx: ", bufTX);
+  displayLetter(85, "rx: ", bufRX);
 
   ledcSetup(ledChannel, freq, resolution);
   ledcAttachPin(buzzerPin, ledChannel);
@@ -232,49 +249,8 @@ void loop()
 
   signalDecoderReceive.contactUpdate();
 
-  if (signalDecoderSend.status == signalDecoderSend.Status::characterReceived)
-  {
-    std::cout << cwDecoder.decode(signalDecoderSend.code) << " " << signalDecoderSend.code << std::endl;
-    displayWPM(signalDecoderSend.wpm, signalDecoderReceive.wpm);
-    bufTX += cwDecoder.decode(signalDecoderSend.code);
-
-    if (bufTX.length() > displayLetter)
-      bufTX.erase(0, bufTX.length() - displayLetter);
-
-    signalDecoderSend.code.clear();
-    displayLetterTX(bufTX);
-    signalDecoderSend.status = signalDecoderSend.Status::waitingWordReceived;
-  }
-
-  if (signalDecoderSend.status == signalDecoderSend.Status::wordReceived)
-  {
-    std::cout << std::endl;
-    displayWPM(signalDecoderSend.wpm, signalDecoderReceive.wpm);
-    bufTX += " ";
-    signalDecoderSend.status = signalDecoderSend.Status::waiting;
-  }
-
-  if (signalDecoderReceive.status == signalDecoderReceive.Status::characterReceived)
-  {
-    std::cout << cwDecoder.decode(signalDecoderReceive.code) << " " << signalDecoderReceive.code << std::endl;
-    displayWPM(signalDecoderSend.wpm, signalDecoderReceive.wpm);
-    bufRX += cwDecoder.decode(signalDecoderReceive.code);
-
-    if (bufRX.length() > displayLetter)
-      bufRX.erase(0, bufRX.length() - displayLetter);
-
-    signalDecoderReceive.code.clear();
-    displayLetterRX(bufRX);
-    signalDecoderReceive.status = signalDecoderReceive.Status::waitingWordReceived;
-  }
-
-  if (signalDecoderReceive.status == signalDecoderReceive.Status::wordReceived)
-  {
-    std::cout << std::endl;
-    displayWPM(signalDecoderSend.wpm, signalDecoderReceive.wpm);
-    bufRX += " ";
-    signalDecoderReceive.status = signalDecoderReceive.Status::waiting;
-  }
+  getBuffer(75, "tx: ", bufTX, signalDecoderSend, signalDecoderReceive);
+  getBuffer(85, "rx: ", bufRX, signalDecoderReceive, signalDecoderSend);
 
   if (contact.fell())
   {
@@ -302,8 +278,8 @@ void loop()
       channel = 0;
     displayInfo(channel);
     displayWPM(signalDecoderSend.wpm, signalDecoderReceive.wpm);
-    displayLetterTX(bufTX);
-    displayLetterRX(bufRX);
+    displayLetter(75, "tx: ", bufTX);
+    displayLetter(85, "rx: ", bufRX);
     ledcWriteTone(ledChannel, 0);
   }
 
@@ -314,8 +290,8 @@ void loop()
       channel = maxChannel;
     displayInfo(channel);
     displayWPM(signalDecoderSend.wpm, signalDecoderReceive.wpm);
-    displayLetterTX(bufTX);
-    displayLetterRX(bufRX);
+    displayLetter(75, "tx: ", bufTX);
+    displayLetter(85, "rx: ", bufRX);
     ledcWriteTone(ledChannel, 0);
   }
 }
