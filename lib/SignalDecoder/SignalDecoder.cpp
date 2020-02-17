@@ -6,7 +6,7 @@ SignalDecoder::SignalDecoder(void)
 
 void SignalDecoder::pressing()
 {
-  startTimerPressed = NOW;
+  startTimerPressed = NOW_TIME;
   durationTimerNotPressed = startTimerPressed - startTimerNotPressed;
 
   if (durationTimerNotPressed < ditAvg * 2.4)
@@ -17,7 +17,7 @@ void SignalDecoder::releasing()
 {
   uint64_t threshold;
 
-  startTimerNotPressed = NOW;
+  startTimerNotPressed = NOW_TIME;
   durationTimerPressed = startTimerNotPressed - startTimerPressed;
   threshold = sqrt(dahAvg * ditAvg);
 
@@ -41,7 +41,7 @@ void SignalDecoder::released()
 {
   if (status == Status::symbolReceived)
   {
-    durationTimerNotPressed = NOW - startTimerNotPressed;
+    durationTimerNotPressed = NOW_TIME - startTimerNotPressed;
     lacktime = 2.2;
 
     if (durationTimerNotPressed > lacktime * ditAvg)
@@ -53,7 +53,7 @@ void SignalDecoder::released()
 
   if (status == Status::characterReceived or status == Status::waitingWordReceived)
   {
-    durationTimerNotPressed = NOW - startTimerNotPressed;
+    durationTimerNotPressed = NOW_TIME - startTimerNotPressed;
 
     if (wpm > 35)
       lacktime = 6;

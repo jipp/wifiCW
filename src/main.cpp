@@ -18,7 +18,6 @@
 #elif ESP8266
 #include <espnow.h>
 #include <ESP8266WiFi.h>
-#else
 #endif
 
 #ifndef SPEED
@@ -35,10 +34,10 @@ const uint8_t wifiChannel = 3; // allowed values 1-14
 #define TS_CS 12   //for D32 Pro
 
 // buttons and buzzer
-const uint8_t buttonPin = 13;
-const uint8_t channelUpPin = 2;
-const uint8_t channelDownPin = 15;
-const uint8_t buzzerPin = 25;
+const uint8_t buttonPin = 13;      //for D32 Pro
+const uint8_t channelUpPin = 2;    //for D32 Pro
+const uint8_t channelDownPin = 15; //for D32 Pro
+const uint8_t buzzerPin = 25;      //for D32 Pro
 
 // datastructure
 typedef struct
@@ -48,9 +47,11 @@ typedef struct
 } Payload;
 
 uint16_t wifiFrequency[] = {2412, 2417, 2422, 2427, 2432, 2437, 2442, 2447, 2452, 2457, 2462, 2467, 2472, 2484};
+#ifdef ESP32
 esp_now_peer_info_t slave;
-uint8_t broadcastMac[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 const esp_now_peer_info_t *peer = &slave;
+#endif
+uint8_t broadcastMac[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 Payload payload;
 
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
@@ -113,30 +114,51 @@ void statusUpdate(bool pressed)
 {
   if (pressed)
   {
-    digitalWrite(BUILTIN_LED, LOW);
+    digitalWrite(LED_BUILTIN, LOW);
+#ifdef ESP32
     ledcWriteTone(ledChannel, freq);
+#elif ESP8266
+    tone(buzzerPin, freq);
+#endif
   }
   else
   {
-    digitalWrite(BUILTIN_LED, HIGH);
+    digitalWrite(LED_BUILTIN, HIGH);
+#ifdef ESP32
     ledcWriteTone(ledChannel, 0);
+#elif ESP8266
+    tone(buzzerPin, 0);
+#endif
   }
 }
 
+#ifdef ESP32
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status)
 {
   if (status != ESP_NOW_SEND_SUCCESS)
     std::cout << "Send Fail!" << std::endl;
 }
+#elif ESP8266
+void OnDataSent(uint8_t *mac_addr, uint8_t status)
+{
+  if (status == 0)
+    std::cout << "Send Fail!" << std::endl;
+}
+#endif
 
 void dataSend(uint8_t channel, bool pressed)
 {
   payload.channel = channel;
   payload.pressed = pressed;
 
+#ifdef ESP32
   esp_now_send(slave.peer_addr, (uint8_t *)&payload, sizeof(payload));
+#elif ESP8266
+  esp_now_send(broadcastMac, (uint8_t *)&payload, sizeof(payload));
+#endif
 }
 
+#ifdef ESP32
 void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
 {
   Payload *payload = (Payload *)data;
@@ -147,12 +169,24 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
     signalDecoderReceive.contactStatus(payload->pressed);
   }
 }
+#elif ESP8266
+void OnDataRecv(uint8_t *mac_addr, uint8_t *data, uint8_t data_len)
+{
+  Payload *payload = (Payload *)data;
+
+  if (channel == payload->channel)
+  {
+    statusUpdate(payload->pressed);
+    signalDecoderReceive.contactStatus(payload->pressed);
+  }
+}
+#endif
 
 void espNowInit()
 {
 #ifdef ESP32
   if (esp_now_init() == ESP_OK)
-#else
+#elif ESP8266
   if (esp_now_init() != 0)
 #endif
   {
@@ -167,6 +201,7 @@ void espNowInit()
 
 void addressInit()
 {
+#ifdef ESP32
   memcpy(&slave.peer_addr, &broadcastMac, 6);
   slave.channel = wifiChannel;
   slave.encrypt = 0;
@@ -175,6 +210,10 @@ void addressInit()
   {
     std::cout << "Address added!" << std::endl;
   }
+#elif ESP8266
+  esp_now_set_self_role(ESP_NOW_ROLE_SLAVE);
+  esp_now_add_peer(broadcastMac, ESP_NOW_ROLE_SLAVE, wifiChannel, NULL, 0);
+#endif
 }
 
 void getBuffer(int16_t y, std::string text, std::string &buf, SignalDecoder &signalDecoder1, SignalDecoder &signalDecoder2)
@@ -208,10 +247,10 @@ void setup()
   pinMode(buttonPin, INPUT_PULLUP);
   pinMode(channelUpPin, INPUT_PULLUP);
   pinMode(channelDownPin, INPUT_PULLUP);
-  pinMode(BUILTIN_LED, OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT);
   pinMode(buzzerPin, OUTPUT);
 
-  digitalWrite(BUILTIN_LED, HIGH);
+  digitalWrite(LED_BUILTIN, HIGH);
 
   Serial.begin(SPEED);
 
@@ -237,8 +276,10 @@ void setup()
   displayLetter(75, "tx: ", bufTX);
   displayLetter(85, "rx: ", bufRX);
 
+#ifdef ESP32
   ledcSetup(ledChannel, freq, resolution);
   ledcAttachPin(buzzerPin, ledChannel);
+#endif
 }
 
 void loop()
@@ -280,7 +321,11 @@ void loop()
     displayWPM(signalDecoderSend.wpm, signalDecoderReceive.wpm);
     displayLetter(75, "tx: ", bufTX);
     displayLetter(85, "rx: ", bufRX);
+#ifdef ESP32
     ledcWriteTone(ledChannel, 0);
+#elif ESP8266
+    tone(buzzerPin, 0);
+#endif
   }
 
   if (channelDown.fell())
@@ -292,6 +337,10 @@ void loop()
     displayWPM(signalDecoderSend.wpm, signalDecoderReceive.wpm);
     displayLetter(75, "tx: ", bufTX);
     displayLetter(85, "rx: ", bufRX);
+#ifdef ESP32
     ledcWriteTone(ledChannel, 0);
+#elif ESP8266
+    tone(buzzerPin, 0);
+#endif
   }
 }
